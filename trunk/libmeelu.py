@@ -198,14 +198,26 @@ class MeeluWindow:
         if self.config.xmldata["css"] == "":
             self.html["css"] = """<style type="text/css">
 #meme {
-    border: 1px solid #729fcf;
+    border: 1px solid #3465a4;
     -moz-border-radius: 5px 5px 5px 0;
     -webkit-border-radius: 5px 5px 5px 0; 
 }
+#meme:hover {
+    border: 1px solid #cc0000;
+    -moz-border-radius: 5px 5px 5px 0;
+    -webkit-border-radius: 5px 5px 5px 0;
+}
 #screenname:hover {
-    color: #edd400;
+    color: #204a87;
 }
 
+#replyform {
+    border: 1px solid #3465a4;
+}
+
+#replyform:hover {
+    border: 1px solid #204a87;
+}
 </style>"""
         else:
             self.html["css"] == """ <style type="text/css">
@@ -321,16 +333,14 @@ Risposta:
             self.html["MemeSfera"] = self.get_html_MemeSfera()
         elif what == "Meme":
             self.html["Meme"] = self.get_html_meme(username,numero)
-        elif what == "Replies":
-            self.html["Replies"] = "<h1>TODO4</h1>"
 
     def get_html_Memes(self):
-        html = "<html><body><h1>Memes:</h1>"
+        html = ""
         xml = self.connection.get_wf()
         parser = XmlString(xml)
         parser.parse_meme()
         dicto = parser.mapping
-        chiavi = self.ordina_tempo(dicto.keys(),dicto)
+        chiavi = self.ordina(dicto.keys(),dicto)
         for meme in chiavi:
             if dicto[meme]["type"] == "text":
                 html += """\n<div id='meme' onclick='openmeme("%s","%s"); '><div id='screenname'>%s:</div>%s<br>%s</div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["id"],dicto[meme]["screen_name"],dicto[meme]["content"], dicto[meme]["data_time"])
@@ -342,7 +352,7 @@ Risposta:
         parser = XmlString(xml)
         parser.parse_meme()
         dicto = parser.mapping
-        chiavi = self.ordina_tempo(dicto.keys(),dicto)
+        chiavi = self.ordina(dicto.keys(),dicto)
         for meme in chiavi:
             if dicto[meme]["type"] == "text":
                 html += """\n<div id='meme' onclick='openmeme("%s","%s");' ><div id='screenname' >%s:</div>%s<br>%s</div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["id"],dicto[meme]["screen_name"],dicto[meme]["content"], dicto[meme]["data_time"])
@@ -354,26 +364,28 @@ Risposta:
         parser = XmlString(xml)
         parser.parse_meme()
         dicto = parser.mapping
-        chiavi = self.ordina_tempo(dicto.keys(),dicto)
+        chiavi = self.ordina(dicto.keys(),dicto,reverse=False)
         for meme in chiavi:
             if dicto[meme]["type"] == "text":
                 html += """\n<div id='meme' onclick='openmeme("%s","%s");' ><div id='screenname' >%s:</div>%s<br>%s</div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["id"],dicto[meme]["screen_name"],dicto[meme]["content"], dicto[meme]["data_time"])
         return html
 
-    def ordina_tempo(self,chiavi,dicto):
+    def ordina(self,chiavi,dicto,reverse=True):
         ordine = []
-        ultimo = ""
+        ultimo = 0
         for meme in chiavi:
-            if ultimo < dicto[meme]["data_time"]:
-                ultimo = dicto[meme]["data_time"]
+            if ultimo < int(dicto[meme]["id"]):
+                ultimo = int(dicto[meme]["id"])
                 ordine.append(meme)
-            elif ultimo > dicto[meme]["data_time"]:
+            elif ultimo > int(dicto[meme]["id"]):
                 ordine.reverse()
                 ordine.append(meme)
                 ordine.reverse()
             else:
-                ultimo = dicto[meme]["data_time"]
+                ultimo = int(dicto[meme]["id"])
                 ordine.append(meme)
+        if reverse:
+            ordine.reverse()
         return ordine
         
     def quit(self,args):
