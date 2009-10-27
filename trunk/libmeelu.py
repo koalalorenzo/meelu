@@ -20,7 +20,7 @@ class MeeluConfig:
         if not os.path.exists(self.config_dir):
             os.mkdir(self.config_dir)
         if not os.path.isfile(self.config_file):
-            self.xmldata = {"username": "","location": "","hash": "","css": ""}
+            self.xmldata = {"username": "","location": "","hash": "","css": "","limit":"20"}
             self.save_xml_config()
     def set_username(self,username):
         self.xmldata["username"] = username
@@ -39,6 +39,7 @@ class MeeluConfig:
             hash_password = ""
             location = ""
             css = ""        
+            limit = 0
             for node2 in node.getElementsByTagName("username"):
                 for node3 in node2.childNodes:
                     username = node3.data
@@ -48,6 +49,9 @@ class MeeluConfig:
             for node2 in node.getElementsByTagName("location"):
                 for node3 in node2.childNodes:
                     location = node3.data
+            for node2 in node.getElementsByTagName("limit"):
+                for node3 in node2.childNodes:
+                    limit = node3.data
             for node2 in node.getElementsByTagName("css"):
                 for node3 in node2.childNodes:
                     css = node3.data     
@@ -55,7 +59,8 @@ class MeeluConfig:
                             "username": username,
                             "location": location,
                             "hash": hash_password,
-                            "css": css
+                            "css": css,
+                            "limit": limit
                         }
         
     def save_xml_config(self):
@@ -65,7 +70,8 @@ class MeeluConfig:
     <hash>%s</hash>
     <location>%s</location>
     <css>%s</css>
-</meeluconfig>""" % (self.xmldata["username"],self.xmldata["hash"],self.xmldata["location"],self.xmldata["css"])
+    <limit>%s</limit>
+</meeluconfig>""" % (self.xmldata["username"],self.xmldata["hash"],self.xmldata["location"],self.xmldata["css"],self.xmldata["limit"])
         self.__xmlfile.write(self.__xmlcode)
         self.__xmlfile.close()
 
@@ -120,6 +126,26 @@ class XmlString:
                         
             self.mapping[id] = memedict
 
+    def parse_profile(self):
+        for node in self.xml.getElementsByTagName("meemi"):
+            avatar_small = ""
+            avatar_medium = ""
+            avatar_normal = ""
+            for avatars in node.getElementsByTagName("avatars"):
+                avatar_small = avatars.getAttribute("small")
+                avatar_medium = avatars.getAttribute("medium")
+                avatar_normal = avatars.getAttribute("normal")
+            profile = ""
+            for node2 in node.getElementsByTagName("profile"):
+                for node3 in node2.childNodes:
+                    profile = node3.data
+        self.mapping = {
+                            "avatar_small": avatar_small,
+                            "avatar_medium": avatar_medium,
+                            "avatar_normal": avatar_normal,
+                            "profile": profile
+                       }
+            
 class MeemiConnect:
     def __init__(self):
         self.username = ""
@@ -173,14 +199,23 @@ class MeemiConnect:
                  }
         return self.api_ask("http://meemi.com/api/%s/save" % self.username,dicto)
         
-    def get_wf(self):
-        return self.api_ask("http://meemi.com/api/%s/wf" % self.username, {})
+    def get_wf(self,limit=20,nr=True):
+        if nr:
+            return self.api_ask("http://meemi.com/api/%s/wf/text/nr" % self.username, {})
+        else:
+            return self.api_ask("http://meemi.com/api/%s/wf/text" % self.username, {})
 
-    def get_memesfera(self):
-        return self.api_ask("http://meemi.com/api/p/meme-sfera", {})
-        
+    def get_memesfera(self,limit=20,nr=True):
+        if nr:
+            return self.api_ask("http://meemi.com/api/p/meme-sfera/text/nr", {})
+        else:
+            return self.api_ask("http://meemi.com/api/p/meme-sfera/text", {})
+    
     def get_single_meme(self,user,mid):
         return self.api_ask("http://meemi.com/api/%s/%s" % (user,mid), {})
+
+    def get_profile(self,username):
+        return self.api_ask("http://meemi.com/api/%s/profile" % username,{})
 
 class MeeluWindow:
     def __init__(self):
@@ -200,19 +235,25 @@ class MeeluWindow:
 #meme {
     border: 1px solid #3465a4;
     -moz-border-radius: 5px 5px 5px 0;
-    -webkit-border-radius: 5px 5px 5px 0; 
+    -webkit-border-radius: 5px 5px 5px 0;
+    min-height: 36px;
+}
+
+#screenavatar {
+    float: right;
 }
 #meme:hover {
     border: 1px solid #cc0000;
     -moz-border-radius: 5px 5px 5px 0;
     -webkit-border-radius: 5px 5px 5px 0;
-}
+}img
 #screenname:hover {
     color: #204a87;
 }
 
 #replyform {
     border: 1px solid #3465a4;
+    text-align: center;
 }
 
 #replyform:hover {
@@ -236,6 +277,9 @@ function replymeme(username,id,meme) {
     document.title = "#ReplyMeme#" + username + "#" + id + "#" + meme;
 }
 
+function openuser(username) {
+    document.title = "#OpenUsername#" + username;
+}
 </script>
 """
         self.html["Login"] = """<form name="form" align="center">
@@ -280,6 +324,10 @@ Meme:<br>
             mid = lista[1]
             self.show_meme(username,mid)
 
+        elif "#OpenUsername#" in msg:
+            msg = msg.replace("#OpenUsername#","")
+            self.show_profile(msg)
+
         elif "#ReplyMeme#" in msg:
             msg = msg.replace("#ReplyMeme#","")
             lista = msg.split("#")
@@ -306,6 +354,11 @@ Meme:<br>
         self.update("Replies")
         self.webkit.load_html_string(self.html["header"] + self.html["Replies"] , "meelu://Replies")
         
+    def show_profile(self,username):
+        self.webkit.set_name("Profile: %s" % username)
+        self.update("Profile",username)
+        self.webkit.load_html_string(self.html["header"] + self.html["profile"], "meelu://Profile/%s" % username)
+
     def show_meme(self,username,numero):
         self.webkit.set_name("Meme")
         self.update("Meme",username,numero)
@@ -333,6 +386,8 @@ Risposta:
             self.html["MemeSfera"] = self.get_html_MemeSfera()
         elif what == "Meme":
             self.html["Meme"] = self.get_html_meme(username,numero)
+        elif what == "Profile":
+            self.html["profile"] = self.get_html_profile(username)
 
     def get_html_Memes(self):
         html = ""
@@ -340,10 +395,11 @@ Risposta:
         parser = XmlString(xml)
         parser.parse_meme()
         dicto = parser.mapping
-        chiavi = self.ordina(dicto.keys(),dicto)
+        chiavi = dicto.keys()
+        chiavi.sort()
+        chiavi.reverse()
         for meme in chiavi:
-            if dicto[meme]["type"] == "text":
-                html += """\n<div id='meme' onclick='openmeme("%s","%s"); '><div id='screenname'>%s:</div>%s<br>%s</div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["id"],dicto[meme]["screen_name"],dicto[meme]["content"], dicto[meme]["data_time"])
+            html += """\n<div id='meme'><div id='screenname' onclick='openuser("%s");'><div id="screenavatar"><img src="%s" /></div>%s:</div><div onclick='openmeme("%s","%s");'>%s</div></div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["avatar_small"],dicto[meme]["screen_name"],dicto[meme]["screen_name"],dicto[meme]["id"],dicto[meme]["content"])
         return html
 
     def get_html_MemeSfera(self):
@@ -352,10 +408,11 @@ Risposta:
         parser = XmlString(xml)
         parser.parse_meme()
         dicto = parser.mapping
-        chiavi = self.ordina(dicto.keys(),dicto)
+        chiavi = dicto.keys()
+        chiavi.sort()
+        chiavi.reverse()
         for meme in chiavi:
-            if dicto[meme]["type"] == "text":
-                html += """\n<div id='meme' onclick='openmeme("%s","%s");' ><div id='screenname' >%s:</div>%s<br>%s</div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["id"],dicto[meme]["screen_name"],dicto[meme]["content"], dicto[meme]["data_time"])
+            html += """\n<div id='meme'><div id='screenname' onclick='openuser("%s");'><div id="screenavatar"><img src="%s" /></div>%s:</div><div onclick='openmeme("%s","%s");'>%s</div></div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["avatar_small"],dicto[meme]["screen_name"],dicto[meme]["screen_name"],dicto[meme]["id"],dicto[meme]["content"])
         return html
 
     def get_html_meme(self,username,numero):
@@ -364,30 +421,19 @@ Risposta:
         parser = XmlString(xml)
         parser.parse_meme()
         dicto = parser.mapping
-        chiavi = self.ordina(dicto.keys(),dicto,reverse=False)
+        chiavi = dicto.keys()
+        chiavi.sort()        
         for meme in chiavi:
-            if dicto[meme]["type"] == "text":
-                html += """\n<div id='meme' onclick='openmeme("%s","%s");' ><div id='screenname' >%s:</div>%s<br>%s</div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["id"],dicto[meme]["screen_name"],dicto[meme]["content"], dicto[meme]["data_time"])
+            html += """\n<div id='meme'><div id='screenname' onclick='openuser("%s");'><div id="screenavatar"><img src="%s" /></div>%s:</div><div onclick='openmeme("%s","%s");'>%s</div></div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["avatar_small"],dicto[meme]["screen_name"],dicto[meme]["screen_name"],dicto[meme]["id"],dicto[meme]["content"])
         return html
-
-    def ordina(self,chiavi,dicto,reverse=True):
-        ordine = []
-        ultimo = 0
-        for meme in chiavi:
-            if ultimo < int(dicto[meme]["id"]):
-                ultimo = int(dicto[meme]["id"])
-                ordine.append(meme)
-            elif ultimo > int(dicto[meme]["id"]):
-                ordine.reverse()
-                ordine.append(meme)
-                ordine.reverse()
-            else:
-                ultimo = int(dicto[meme]["id"])
-                ordine.append(meme)
-        if reverse:
-            ordine.reverse()
-        return ordine
         
+    def get_html_profile(self,username):
+        html = ""
+        xml = self.connection.get_profile(username)
+        parser = XmlString(xml)
+        parser.parse_profile()
+        html = """<div id="screen_name>%s</div><div id="screen_avatar"><img src="%s" /></div><div id="screen_profile">%s</div>""" % ( username, parser.mapping["avatar_medium"], parser.mapping["profile"]) 
+        return html
     def quit(self,args):
         gtk.main_quit(args)
 
