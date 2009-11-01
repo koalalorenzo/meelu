@@ -9,7 +9,8 @@ import urllib
 import urllib2
 import xml.dom.minidom
 from xml.dom.minidom import Node
-
+import gobject
+gobject.threads_init()
 
 class MeeluConfig:
     def __init__(self):
@@ -234,8 +235,8 @@ class MeeluWindow:
             self.html["css"] = """<style type="text/css">
 #meme {
     border: 1px solid #3465a4;
-    -moz-border-radius: 5px 5px 5px 0;
-    -webkit-border-radius: 5px 5px 5px 0;
+    -moz-border-radius: 15px 15px 15px 15px;
+    -webkit-border-radius: 15px 15px 15px 15px;
     min-height: 36px;
 }
 
@@ -244,8 +245,8 @@ class MeeluWindow:
 }
 #meme:hover {
     border: 1px solid #cc0000;
-    -moz-border-radius: 5px 5px 5px 0;
-    -webkit-border-radius: 5px 5px 5px 0;
+    -moz-border-radius: 15px 15px 15px 15px;
+    -webkit-border-radius: 15px 15px 15px 15px;
 }img
 #screenname:hover {
     color: #204a87;
