@@ -205,7 +205,9 @@ class HtmlBuilder:
     -moz-border-radius: 10px;
     -webkit-border-radius: 10px;
 }
-img
+#screenname {
+    font-weight: bold;
+}
 #screenname:hover {
     color: #204a87;
 }
