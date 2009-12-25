@@ -4,7 +4,6 @@
 import sys
 
 import os
-import thread
 import urllib
 import urllib2
 import xml.dom.minidom
@@ -154,11 +153,15 @@ class MeemiConnect:
                  }
         return self.api_ask("http://meemi.com/api/%s/wf/mark/only_new_replies" % self.username,dicto)
         
-    def get_wf(self,limit=20,nr=True):
-        if nr:
+    def get_wf(self,limit=20,nr=True,ot=False):
+        if nr and ot:
             return self.api_ask("http://meemi.com/api/%s/wf/text/nr" % self.username, {})
-        else:
+        elif nr and not ot:
+            return self.api_ask("http://meemi.com/api/%s/wf/nr" % self.username, {})
+        elif ot and not nr:
             return self.api_ask("http://meemi.com/api/%s/wf/text" % self.username, {})
+        else:
+            return self.api_ask("http://meemi.com/api/%s/wf" % self.username, {})
 
     def get_wf_new(self,limit=20,nr=True):
         dicto = {
@@ -397,3 +400,76 @@ Rispondi:<br>
 
     def home_page(self):
         return "<html>%s<body>%s%s</body>" % ( self.header,"<h1 id='meme'>Benvenuto!</h1>", self.menu_form), True
+
+class ConfigParser:
+    def __init__(self):
+        self.path_home = os.path.expanduser("~")
+        self.path_config = os.path.join(self.path_home,".config/meelu/")
+        if not os.path.exists(self.path_config):
+            os.mkdir(self.path_config)
+        self.path_file = os.path.join(self.path_config,"config.lst")
+        self.path_log_file = os.path.join(self.path_config,"axex.log")
+        
+        self.__touch(self.path_file)
+        self.__touch(self.path_log_file)
+        
+        self.data = dict()
+        self.data["cssfile"] = None
+        self.data["refreshtime"] = 120
+        self.data["username"] = None
+        self.data["password"] = None
+        
+        self.load_files()
+        
+    def get_username(self):
+        return self.data["username"].decode("base64")
+        
+    def get_password(self):
+        return self.data["password"].decode("base64")
+
+    def get_access(self):
+        return self.get_username, self.get_password
+ 
+    def load_files(self):
+        lines = self.__read_lines(self.path_file)
+        for line in lines:
+            list = line.split(":")
+            if "username" in list[0]: # username
+                self.data["username"] = list[1]
+            elif "password" in list[0]: # hash
+                self.data["password"] = list[1]
+            elif "refreshtime" in list[0]: # tempo di caricamento
+                self.data["refreshtime"] = int(list[1])
+            elif "cssfile" in list[0]: # path del css
+                self.data["cssfile"] = list[1]
+    
+    def set_access(self, username, hash):
+        self.data["username"] = str(username).encode("base64")
+        self.data["password"] = str(hash).encode("base64")
+        self.data["username"] = self.data["username"].replace("\n","")
+        self.data["password"] = self.data["password"].replace("\n","")
+        
+    def save_files(self):    
+        datafile = ""
+        for key in self.data.keys():
+            datafile += "\n%s:%s" % ( str(key), str(self.data[key]) )
+        configfile = open(self.path_file,"w")
+        configfile.write(datafile)
+        configfile.close()
+        
+    def __touch(self,path):
+        if not os.path.exists(path):
+            fileopen = open(path,"w")
+            fileopen.write("")
+            fileopen.close()
+            
+    def __read_lines(self, path):
+        if not os.path.exists(path):
+            return []
+        fileopen = open(path)
+        lines = fileopen.readlines()
+        fileopen.close()
+        for line in lines:
+            if not line or line == "" or line == "\n" or line == " " or ":" not in line:
+                lines.pop(lines.index(line))
+        return lines
