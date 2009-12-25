@@ -10,29 +10,35 @@ import gtk.glade
 import sys
 import webkit
 import thread
+import os
+
 class MeeluGUIWebkit:
     def __init__(self):
         """
         Funzione d'iniziale.
         """
+        ######################
+        self.path_icon = os.path.join(os.getcwd(), "meelu.png")
+        self.HtmlBuilder = libmeelu.HtmlBuilder()
+        self.connection = libmeelu.MeemiConnect()
+        self.config = libmeelu.ConfigParser()
+        ######################
+        
         self.widgets = gtk.glade.XML("gui.glade")
         self.window = self.widgets.get_widget("window")
-        
-        self.about_window = self.widgets.get_widget("about")
-        
+        self.window.set_title("Meelu")
+
+        self.window.set_icon_from_file(self.path_icon)
         self.window_show = False
-        self.about_window_show = False
         
         signalDic = { 
                         "quit_event" : self.quit,
                         "new_meme" : self.new_meme,
                         "home_page" : self.home_page,
-                        "refresh_page": self.refresh,
                         "get_wf" : self.get_wf,
-                        "about_close": self.__about,
-                        "about_info" : self.__about_info,
-                        "about_help" : self.__about_help,
-                        "close_window": self.__show
+                        "get_new" : self.get_new,
+                        "close_window": self.__show,
+                        "show_settings": self.show_settings
                     }
                     
         self.widgets.signal_autoconnect(signalDic)
@@ -42,23 +48,16 @@ class MeeluGUIWebkit:
         self.widgets.get_widget("scrolledwindow1").add(self.webkit)
         self.webkit.connect('title-changed', self.title_changed)
 
-        self.about_webkit = webkit.WebView()
-        self.widgets.get_widget("aboutscrolled").add(self.about_webkit)
-        self.about_webkit.show()
-        self.about_webkit.load_html_string("<h1>Info</h1>","meelu://newmeme")
-        
-
         self.__status_icon()
-
-        self.HtmlBuilder = libmeelu.HtmlBuilder()
-        self.connection = libmeelu.MeemiConnect()
-
+        
+        ###################
+        self.cache_get_wf_xml = ""
+        
     def __status_icon(self):
         
         self.Icon = gtk.StatusIcon()
+        self.Icon.set_from_file(self.path_icon)
         self.Icon_Menu = gtk.Menu()
-
-        self.Icon.set_from_stock(gtk.STOCK_HOME)
         self.Icon.set_tooltip("Meelu - Meemi Client")
         
         self.Icon.connect('activate', self.__show)
@@ -70,7 +69,7 @@ class MeeluGUIWebkit:
         
         self.Icon_Menu_Quit.connect('activate', self.quit, self.Icon)
         self.Icon_Menu_Home.connect('activate', self.__show)
-        self.Icon_Menu_About.connect('activate', self.__about)
+        self.Icon_Menu_About.connect('activate', self.show_about_info)
                 
         self.Icon_Menu.append(self.Icon_Menu_Home)
         self.Icon_Menu.append(self.Icon_Menu_About)
@@ -92,24 +91,22 @@ class MeeluGUIWebkit:
         else:
             self.window.show()
             self.window_show = True
+            
+    def show_settings(self,widget=True, button=True, time=True, data=None):
+        self.webkit.load_html_string("<h1>In costruzione</h1>","meelu://newmeme")
 
-    def __about_info(self, widget=True, button=True, time=True, data=None):
-        self.about_webkit.load_html_string("<h1>Info</h1>","meelu://newmeme")
+    def show_about_info(self, widget=True, button=True, time=True, data=None):
+        self.webkit.load_html_string("<h1>Info</h1>","meelu://newmeme")
 
-    def __about_help(self, widget=True, button=True, time=True, data=None):
-        self.about_webkit.load_html_string("<h1>Help</h1>","meelu://newmeme")
-    def __about(self, widget=True, button=True, time=True, data=None):
-        if self.about_window_show:
-            self.about_window.hide()
-            self.about_window_show = False
-        else:
-            self.about_window.show()
-            self.about_window_show = True
+    def show_about_help(self, widget=True, button=True, time=True, data=None):
+        self.webkit.load_html_string("<h1>Help</h1>","meelu://newmeme")
 
-    def login(self, widget):
+    def login(self, widget=True):
         if not self.connection.logged:
             html, status = self.HtmlBuilder.login()
             self.webkit.load_html_string(html,"meelu://")
+        else:
+            self.get_wf()
             
     def new_meme(self, widget):
         if self.connection.logged:
@@ -118,22 +115,26 @@ class MeeluGUIWebkit:
         else:
             self.login(True)
             
-    def get_wf(self, widget):
+    def get_wf(self, widget=True):
         if self.connection.logged:
-            xml = self.connection.get_wf()
+            if self.cache_get_wf_xml:
+                xml = self.cache_get_wf_xml
+            else:
+                xml = self.connection.get_wf()
+                
             html, status = self.HtmlBuilder.wf_from_xml(xml)
             self.webkit.load_html_string(html,"meelu://wf")
         else:
             self.login(True)
-                    
-    def refresh(self, widget):
-        print "TODO"
-        pass
-    
+
+    def get_new(self, widget=True):
+        xml = self.connection.get_wf_new()
+        html, status = self.HtmlBuilder.wf_from_xml(xml)
+        self.webkit.load_html_string(html,"meelu://newwf")
+        
     def home_page(self, widget):
         if self.connection.logged:
-            html, status = self.HtmlBuilder.home_page()
-            self.webkit.load_html_string(html,"meelu://")
+            self.get_wf()
         else:
             self.login(True)
             
@@ -147,22 +148,28 @@ class MeeluGUIWebkit:
         if "#menu#" in msg:
             msg = msg.replace("#menu#","")
             if "show_wf" in msg:
+                self.get_wf()
                 
-                xml = self.connection.get_wf()
-                html, status = self.HtmlBuilder.wf_from_xml(xml)
-                self.webkit.load_html_string(html,"meelu://wf")
-                
-            if "show_newmeme" in msg:
-                html, status = self.HtmlBuilder.get_new_meme_form()
-                self.webkit.load_html_string(html,"meelu://")
+            elif "show_newmeme" in msg:
+                self.new_meme()
                 
         elif "#login#" in msg:
             msg = msg.replace("#login#","")
             accesslist = msg.split("#")
-            self.connection.set_access(accesslist[0],accesslist[1]) # Salvo username e password
+            self.connection.set_access(accesslist[0],accesslist[1])
             
             xml = self.connection.check_username_exists()
             html, status = self.HtmlBuilder.login_from_xml(xml)
+            
+            if status:
+                import hashlib
+                OSha512 = hashlib.sha256()
+                OSha512.update(accesslist[1])
+                newhash = OSha512.hexdigest()
+                OSha512 = ""
+                self.config.set_access(accesslist[0],newhash)
+                self.config.save_files()
+                
             self.webkit.load_html_string(html,"meelu://")
             
         elif "#NewMeme#" in msg:
@@ -199,6 +206,7 @@ class MeeluGUIWebkit:
             xml = self.connection.reply_meme(username,mid,content)
             html, status = self.HtmlBuilder.reply_meme_from_xml(xml)
             self.webkit.load_html_string(html,"meelu://")
+            
             if status:
                 xml = self.connection.get_single_meme(username,mid)
                 html, status = self.HtmlBuilder.single_meme_from_xml(xml,username,mid)
@@ -212,15 +220,28 @@ class MeeluGUIWebkit:
         """
         Mostra la finestra e carica la pagina di Login.
         """
-        html, status = self.HtmlBuilder.login()
-        self.webkit.load_html_string(html,"meelu://")
+        username =  self.config.get_username()
+        hash = self.config.get_password()
+        self.connection.set_access(username,hash,nohash=True)
+        xml = self.connection.check_username_exists()
+        thread.start_new_thread(self.loop_get_wf, ())
+        
+        self.login()
         
         self.webkit.show()
         self.__show()
-        
-        
         gtk.main()
         
+    def loop_get_wf(self):
+        waitime = int(self.config.data["refreshtime"])
+        from time import sleep
+        while 1:
+            if self.connection.logged:
+                self.cache_get_wf_xml = self.connection.get_wf()
+            else:
+                self.cache_get_wf_xml = ""
+            sleep(waitime)
+            
     def quit(self, widget=True, other=True, one=True):
         """
         Quesa funzione chiude il programma.
