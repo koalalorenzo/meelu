@@ -252,7 +252,7 @@ class MeeluGUIWebkit:
         from time import sleep
         while 1:
             if self.connection.logged:
-                self.cache_get_wf_xml = self.connection.get_wf()
+                self.cache_get_wf_xml = self.connection.get_wf(ot=True)
                 thread.start_new_thread(self.__ntf_new_meme, ())
             else:
                 self.cache_get_wf_xml = ""
@@ -268,7 +268,11 @@ class MeeluGUIWebkit:
         for meme in chiavi:
             if not dicto[meme]["id"] in self.__ntf_read:
                 self.__ntf_read.append(dicto[meme]["id"])
-                pynotify.Notification("Meelu: %s" % dicto[meme]["screen_name"], dicto[meme]["content"]).show() 
+                if len(dicto[meme]["content"]) >= 253:
+                    text = dicto[meme]["content"][:253] + "..."
+                else:
+                    text = dicto[meme]["content"]
+                pynotify.Notification("Meelu: %s" % dicto[meme]["screen_name"], text).show() 
   
     def quit(self, widget=True, other=True, one=True):
         """

@@ -153,7 +153,7 @@ class MeemiConnect:
                  }
         return self.api_ask("http://meemi.com/api/%s/wf/mark/only_new_replies" % self.username,dicto)
         
-    def get_wf(self,limit=20,nr=True,ot=False):
+    def get_wf(self,limit=20,nr=True,ot=True):
         if nr and ot:
             return self.api_ask("http://meemi.com/api/%s/wf/text/nr" % self.username, {})
         elif nr and not ot:
@@ -192,6 +192,8 @@ class HtmlBuilder:
         self.set_default_values()
         
     def load_css(self, path):
+        if not path:
+            return
         if os.path.isfile(path):
             opened = open(path,"r")
             self.css = opened.read()
