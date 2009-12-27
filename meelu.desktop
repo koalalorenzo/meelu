@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=Meelu
+Comment=The Meemi.com Client
+Exec=/usr/bin/meelu
+Icon=/usr/share/meelu/meelu.png
+Terminal=false
