@@ -434,11 +434,17 @@ class ConfigParser:
         self.load_files()
         
     def get_username(self):
-        return self.data["username"].decode("base64")
-        
+        if self.data["username"]:
+            return self.data["username"].decode("base64")
+        else:
+            return None
+            
     def get_password(self):
-        return self.data["password"].decode("base64")
-
+        if self.data["password"]:
+            return self.data["password"].decode("base64")
+        else:
+            return None
+            
     def get_access(self):
         return self.get_username, self.get_password
  

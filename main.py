@@ -236,8 +236,9 @@ class MeeluGUIWebkit:
         """
         username =  self.config.get_username()
         hash = self.config.get_password()
-        self.connection.set_access(username,hash,nohash=True)
-        xml = self.connection.check_username_exists()
+        if username and hash:
+            self.connection.set_access(username,hash,nohash=True)
+            xml = self.connection.check_username_exists()
         thread.start_new_thread(self.loop_get_wf, ())
         
         self.login()
