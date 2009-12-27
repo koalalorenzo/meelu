@@ -401,16 +401,17 @@ Meme:<br>
         chiavi.reverse()
         html = "<html>%s<body>" % self.header
         for meme in chiavi:
-            if "image" in dicto[meme].keys():
-                str = '<img src="%s">' % dicto[meme]["image"]
+            str = ""
+            if dicto[meme]["image"]:
+                str += '<img src="%s">' % dicto[meme]["image"]
                 str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
-            elif "video" in dicto[meme].keys():
-                str = dicto[meme]["video"]
+            if dicto[meme]["video"]:
+                str += dicto[meme]["video"]
                 str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
-            elif "link" in dicto[meme].keys():
-                str = "<a href='%s'>%s</a>" % (dicto[meme]["link"], self.__code_html(dicto[meme]["description"]))
-            else:
-                str = self.__code_html(dicto[meme]["content"])
+            if dicto[meme]["link"]:
+                str += "<a href='%s'>%s</a>" % (dicto[meme]["link"], self.__code_html(dicto[meme]["description"]))
+            if dicto[meme]["content"]:
+                str += self.__code_html(dicto[meme]["content"])
             html += """\n<div id='meme'><div id='screenname' onclick='openuser("%s");'><div id="screenavatar"><img src="%s" /></div>%s:</div><div onclick='openmeme("%s","%s");'>%s</div></div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["avatar_small"],dicto[meme]["screen_name"],dicto[meme]["screen_name"],dicto[meme]["id"],str)
         html += "</body>"
         return html, True
@@ -423,16 +424,17 @@ Meme:<br>
         chiavi.sort()
         html = "<html>%s<body>" % self.header
         for meme in chiavi:
-            if "image" in dicto[meme].keys():
-                str = '<img src="%s">' % dicto[meme]["image"]
+            str = ""
+            if dicto[meme]["image"]:
+                str += '<img src="%s">' % dicto[meme]["image"]
                 str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
-            elif "video" in dicto[meme].keys():
-                str = dicto[meme]["video"]
+            if dicto[meme]["video"]:
+                str += dicto[meme]["video"]
                 str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
-            elif "link" in dicto[meme].keys():
-                str = "<a href='%s'>%s</a>" % (dicto[meme]["link"], self.__code_html(dicto[meme]["description"]))
-            else:
-                str = self.__code_html(dicto[meme]["content"])
+            if dicto[meme]["link"]:
+                str += "<a href='%s'>%s</a>" % (dicto[meme]["link"], self.__code_html(dicto[meme]["description"]))
+            if dicto[meme]["content"]:
+                str += self.__code_html(dicto[meme]["content"])
             html += """\n<div id='meme'><div id='screenname' onclick='openuser("%s");'><div id="screenavatar"><img src="%s" /></div>%s:</div><div onclick='openmeme("%s","%s");'>%s</div></div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["avatar_small"],dicto[meme]["screen_name"],dicto[meme]["screen_name"],dicto[meme]["id"],str)
         html += """<div id="replyform"><from name="form">
 Rispondi:<br>
