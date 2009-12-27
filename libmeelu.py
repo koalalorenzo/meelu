@@ -31,6 +31,12 @@ class XmlString:
             original_link = ""
             location = ""
             source = ""
+            image = ""
+            video = ""
+            caption = ""
+            link = ""
+            description = ""
+            
             for node2 in node.getElementsByTagName("content"):
                 for node3 in node2.childNodes:
                     content = node3.data
@@ -44,6 +50,25 @@ class XmlString:
                 for node3 in node2.childNodes:
                     source = node3.data
                     
+            for node2 in node.getElementsByTagName("link"):
+                for node3 in node2.childNodes:
+                    link = node3.data
+                    
+            for node2 in node.getElementsByTagName("description"):
+                for node3 in node2.childNodes:
+                    description = node3.data 
+                    
+            for node2 in node.getElementsByTagName("image"):
+                    image = node2.getAttribute("small")
+                    
+            for node2 in node.getElementsByTagName("video"):
+                for node3 in node2.childNodes:
+                    video = node3.data
+                     
+            for node2 in node.getElementsByTagName("caption"):
+                for node3 in node2.childNodes:
+                    caption = node3.data
+                    
             memedict = {
                             "id": id,
                             "favourite": node.getAttribute("favourite"),
@@ -55,7 +80,12 @@ class XmlString:
                             "content": content,
                             "original_link": original_link,
                             "location": location,
-                            "source": source
+                            "source": source,
+                            "video": video,
+                            "image": image,
+                            "caption": caption,
+                            "link": link,
+                            "description": description
                         }
                         
             self.mapping[id] = memedict
@@ -153,7 +183,7 @@ class MeemiConnect:
                  }
         return self.api_ask("http://meemi.com/api/%s/wf/mark/only_new_replies" % self.username,dicto)
         
-    def get_wf(self,limit=20,nr=True,ot=True):
+    def get_wf(self,limit=20,nr=True,ot=False):
         if nr and ot:
             return self.api_ask("http://meemi.com/api/%s/wf/text/nr" % self.username, {})
         elif nr and not ot:
@@ -371,7 +401,16 @@ Meme:<br>
         chiavi.reverse()
         html = "<html>%s<body>" % self.header
         for meme in chiavi:
-            str = self.__code_html(dicto[meme]["content"])
+            if "image" in dicto[meme].keys():
+                str = '<img src="%s">' % dicto[meme]["image"]
+                str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
+            elif "video" in dicto[meme].keys():
+                str = dicto[meme]["video"]
+                str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
+            elif "link" in dicto[meme].keys():
+                str = "<a href='%s'>%s</a>" % (dicto[meme]["link"], self.__code_html(dicto[meme]["description"]))
+            else:
+                str = self.__code_html(dicto[meme]["content"])
             html += """\n<div id='meme'><div id='screenname' onclick='openuser("%s");'><div id="screenavatar"><img src="%s" /></div>%s:</div><div onclick='openmeme("%s","%s");'>%s</div></div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["avatar_small"],dicto[meme]["screen_name"],dicto[meme]["screen_name"],dicto[meme]["id"],str)
         html += "</body>"
         return html, True
@@ -384,7 +423,16 @@ Meme:<br>
         chiavi.sort()
         html = "<html>%s<body>" % self.header
         for meme in chiavi:
-            str = self.__code_html(dicto[meme]["content"])
+            if "image" in dicto[meme].keys():
+                str = '<img src="%s">' % dicto[meme]["image"]
+                str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
+            elif "video" in dicto[meme].keys():
+                str = dicto[meme]["video"]
+                str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
+            elif "link" in dicto[meme].keys():
+                str = "<a href='%s'>%s</a>" % (dicto[meme]["link"], self.__code_html(dicto[meme]["description"]))
+            else:
+                str = self.__code_html(dicto[meme]["content"])
             html += """\n<div id='meme'><div id='screenname' onclick='openuser("%s");'><div id="screenavatar"><img src="%s" /></div>%s:</div><div onclick='openmeme("%s","%s");'>%s</div></div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["avatar_small"],dicto[meme]["screen_name"],dicto[meme]["screen_name"],dicto[meme]["id"],str)
         html += """<div id="replyform"><from name="form">
 Rispondi:<br>
