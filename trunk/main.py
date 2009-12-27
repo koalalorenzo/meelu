@@ -11,20 +11,25 @@ import sys
 import webkit
 import thread
 import os
+import pynotify
 
 class MeeluGUIWebkit:
-    def __init__(self):
+    def __init__(self,maindir=''):
         """
         Funzione d'iniziale.
         """
+        self.maindir = maindir
+        
         ######################
-        self.path_icon = os.path.join(os.getcwd(), "meelu.png")
+        self.path_icon = os.path.join(self.maindir, "meelu.png")
         self.HtmlBuilder = libmeelu.HtmlBuilder()
         self.connection = libmeelu.MeemiConnect()
         self.config = libmeelu.ConfigParser()
+        pynotify.init("Meelu")
+        pynotify.Notification("Meelu", "Loading...").show() 
         ######################
         
-        self.widgets = gtk.glade.XML("gui.glade")
+        self.widgets = gtk.glade.XML(os.path.join(self.maindir, "gui.glade"))
         self.window = self.widgets.get_widget("window")
         self.window.set_title("Meelu")
 
@@ -52,7 +57,10 @@ class MeeluGUIWebkit:
         
         ###################
         self.cache_get_wf_xml = ""
-        
+        self.__ntf_read = []
+        if not self.config.data["cssfile"] == "None":
+            self.HtmlBuilder.load_css(self.config.data["cssfile"])
+            
     def __status_icon(self):
         
         self.Icon = gtk.StatusIcon()
@@ -153,6 +161,12 @@ class MeeluGUIWebkit:
             elif "show_newmeme" in msg:
                 self.new_meme()
                 
+        elif "#settings#" in msg:
+            msg = msg.replace("#settings#","")
+            list = msg.split("#")
+            if "refreshtime" in list[0]:
+                pass
+                
         elif "#login#" in msg:
             msg = msg.replace("#login#","")
             accesslist = msg.split("#")
@@ -230,18 +244,32 @@ class MeeluGUIWebkit:
         
         self.webkit.show()
         self.__show()
+        pynotify.Notification("Meelu", "Loading complete!").show()
         gtk.main()
+
         
     def loop_get_wf(self):
-        waitime = int(self.config.data["refreshtime"])
         from time import sleep
         while 1:
             if self.connection.logged:
                 self.cache_get_wf_xml = self.connection.get_wf()
+                thread.start_new_thread(self.__ntf_new_meme, ())
             else:
                 self.cache_get_wf_xml = ""
-            sleep(waitime)
-            
+            sleep(int(self.config.data["refreshtime"]))
+
+    def __ntf_new_meme(self):
+        parser = libmeelu.XmlString(self.cache_get_wf_xml)
+        parser.parse_meme()
+        dicto = parser.mapping
+        chiavi = dicto.keys()
+        chiavi.sort()
+        chiavi.reverse()
+        for meme in chiavi:
+            if not dicto[meme]["id"] in self.__ntf_read:
+                self.__ntf_read.append(dicto[meme]["id"])
+                pynotify.Notification("Meelu: %s" % dicto[meme]["screen_name"], dicto[meme]["content"]).show() 
+  
     def quit(self, widget=True, other=True, one=True):
         """
         Quesa funzione chiude il programma.
@@ -250,5 +278,8 @@ class MeeluGUIWebkit:
 
 
 if __name__ == "__main__":
-    gui = MeeluGUIWebkit()
+    if len(sys.argv) > 1:
+        gui = MeeluGUIWebkit(sys.argv[1])
+    else:
+        gui = MeeluGUIWebkit()
     gui.show_window()
