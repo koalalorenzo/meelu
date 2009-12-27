@@ -11,6 +11,7 @@ setup(name='Meelu',
     py_modules=['libmeelu'],
     data_files=[
                 ('share/meelu/', ['meelu.png', 'gui.glade', 'main.py']),
-                ('bin', ['meelu'])
+                ('bin', ['meelu']),
+                ('share/applications', ['meelu.desktop'])
                 ],
     )
