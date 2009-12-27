@@ -189,9 +189,19 @@ class MeemiConnect:
 
 class HtmlBuilder:
     def __init__(self):
-        self.load_default_html()
+        self.set_default_values()
         
-    def load_default_html(self):
+    def load_css(self, path):
+        if os.path.isfile(path):
+            opened = open(path,"r")
+            self.css = opened.read()
+            opened.close()
+            self.header = """<head><style type="text/css">%s</style>
+%s
+</head>""" % (self.css, self.javascript)
+        else:
+            print "%s not found!" % path
+    def set_default_values(self):
         self.css = """
 #meme {
     border: 1px solid #3465a4;
@@ -448,7 +458,14 @@ class ConfigParser:
         self.data["password"] = str(hash).encode("base64")
         self.data["username"] = self.data["username"].replace("\n","")
         self.data["password"] = self.data["password"].replace("\n","")
-        
+
+    def set_cssfile(self, path):
+        if os.path.exists(path):
+            self.data["cssfile"] = path
+            
+    def set_refreshtime(self, time):
+        self.data["refreshtime"] = int(time)
+
     def save_files(self):    
         datafile = ""
         for key in self.data.keys():
@@ -471,5 +488,12 @@ class ConfigParser:
         fileopen.close()
         for line in lines:
             if not line or line == "" or line == "\n" or line == " " or ":" not in line:
-                lines.pop(lines.index(line))
-        return lines
+                try:
+                    lines.pop(lines.index(line))
+                except:
+                    pass
+        newlines = []
+        for line in lines:
+            line = line.replace("\n","")
+            newlines.append(line)
+        return newlines

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+python /usr/share/meelu/main.py /usr/share/meelu
