@@ -489,6 +489,8 @@ Rispondi:<br>
         
         html += """<hr>Tempo di aggiornamento (<i>Numero</i>):<br><input name="numeri" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('refreshtime#' + this.form.numeri.value);" value="Aggiorna"><br>""" % config["refreshtime"]
         
+        html += """<hr>Notifiche per volta (<i>Numero</i>):<br><input name="notifylimit" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('notifylimit#' + this.form.notifylimit.value);" value="Aggiorna"><br>""" % config["notify_limit"]
+        
         html += """<hr>Meme da caricare (<i>Numero</i>):<br><input name="meminum" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('limit#' + this.form.meminum.value);" value="Aggiorna"><br>""" % config["limit"]
         
         #html += """Foglio di stile: <input name="style" type="file" size="15" value="%s"><input type="button" onclick="settings('cssfile#' + this.form.style.value);" value="Aggiorna"><br>""" % config["cssfile"]
@@ -520,6 +522,7 @@ class ConfigParser:
         self.data["only_txt"] = False
         self.data["notify"] = True
         self.data["limit"] = 20
+        self.data["notify_limit"] = 5
         
         self.load_files()
         self.save_files()
@@ -550,6 +553,8 @@ class ConfigParser:
                 self.data["refreshtime"] = int(list[1])
             elif "limit" in list[0]:
                 self.data["limit"] = int(list[1])
+            elif "notify_limit" in list[0]:
+                self.data["notify_limit"] = int(list[1])
             elif "cssfile" in list[0]:
                 self.data["cssfile"] = list[1]
             elif "only_txt" in list[0]:
@@ -581,6 +586,8 @@ class ConfigParser:
     def set_limit(self, limite):
         self.data["limit"] = int(limite)
     
+    def set_notify_limit(self, limite):
+        self.data["notify_limit"] = int(limite)
     
     def change_only_text_value(self):
         if self.data["only_txt"]:

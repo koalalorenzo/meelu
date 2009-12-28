@@ -12,6 +12,7 @@ import webkit
 import thread
 import os
 import pynotify
+from time import sleep
 
 class MeeluGUIWebkit:
     def __init__(self,maindir=''):
@@ -86,10 +87,12 @@ class MeeluGUIWebkit:
         self.Icon_Menu.append(self.Icon_Menu_Quit)        
         
         self.Icon.set_visible(True)
+        
     def __show_info(self, widget=True, button=True, time=True, data=None):
         self.window.show()
         self.window_show = True
         self.show_info()
+        
     def __status_icon_popup(self, widget=True, button=True, time=True, data=None):
         if button == 3:
             if data:
@@ -131,8 +134,8 @@ class MeeluGUIWebkit:
             if self.cache_get_wf_xml:
                 xml = self.cache_get_wf_xml
             else:
-                xml = self.connection.get_wf()
-                
+                self.cache_get_wf_xml = self.connection.get_wf()
+                xml = self.cache_get_wf_xml
             html, status = self.HtmlBuilder.wf_from_xml(xml)
             self.webkit.load_html_string(html,"meelu://wf")
         else:
@@ -174,6 +177,8 @@ class MeeluGUIWebkit:
                 self.config.set_refreshtime(list[1])
             elif "limit" in list[0]:
                 self.config.set_limit(list[1])
+            elif "notifylimit" in list[0]:
+                self.config.set_notify_limit(list[1])
             elif "cssfile" in list[0]:
                 self.config.set_cssfile(list[1])
                 if self.config.data["cssfile"]:
@@ -280,7 +285,6 @@ class MeeluGUIWebkit:
         gtk.main()
 
     def loop_get_wf(self):
-        from time import sleep
         while 1:
             if self.connection.logged:
                 self.cache_get_wf_xml = self.connection.get_wf(limit=self.config.data["limit"], ot=self.config.data["only_txt"])
@@ -298,6 +302,8 @@ class MeeluGUIWebkit:
         chiavi = dicto.keys()
         chiavi.sort()
         chiavi.reverse()
+        time = True
+        count = 0
         for meme in chiavi:
             if not dicto[meme]["id"] in self.__ntf_read:
                 self.__ntf_read.append(dicto[meme]["id"])
@@ -307,8 +313,15 @@ class MeeluGUIWebkit:
                     text = dicto[meme]["content"][:253] + "..."
                 else:
                     text = dicto[meme]["content"]
-                pynotify.Notification("Meelu: %s" % dicto[meme]["screen_name"], text).show() 
-  
+                if time:
+                    sleep(0.1)
+                    pynotify.Notification("Meelu: %s" % dicto[meme]["screen_name"], text).show()
+                    count += 1
+                else:
+                    continue
+                if self.config.data["notify_limit"] == count:
+                    time = False
+                    
     def quit(self, widget=True, other=True, one=True):
         """
         Quesa funzione chiude il programma.
