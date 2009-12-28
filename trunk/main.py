@@ -21,14 +21,16 @@ class MeeluGUIWebkit:
         self.maindir = maindir
         
         ######################
+        print "Loading environment:",
         self.path_icon = os.path.join(self.maindir, "meelu.png")
         self.HtmlBuilder = libmeelu.HtmlBuilder()
         self.connection = libmeelu.MeemiConnect()
         self.config = libmeelu.ConfigParser()
         pynotify.init("Meelu")
-        pynotify.Notification("Meelu", "Loading...").show() 
+        print "done"
+        pynotify.Notification("Meelu", "Loading... Please Wait...").show() 
         ######################
-        
+        print "Loading GUI:",
         self.widgets = gtk.glade.XML(os.path.join(self.maindir, "gui.glade"))
         self.window = self.widgets.get_widget("window")
         self.window.set_title("Meelu")
@@ -54,7 +56,7 @@ class MeeluGUIWebkit:
         self.webkit.connect('title-changed', self.title_changed)
 
         self.__status_icon()
-        
+        print "done"
         ###################
         self.cache_get_wf_xml = ""
         self.__ntf_read = []
@@ -101,13 +103,11 @@ class MeeluGUIWebkit:
             self.window_show = True
             
     def show_settings(self,widget=True, button=True, time=True, data=None):
-        self.webkit.load_html_string("<h1>In costruzione</h1>","meelu://newmeme")
+        html = self.HtmlBuilder.settings_page(self.config.data)
+        self.webkit.load_html_string(html,"meelu://settings")
 
     def show_about_info(self, widget=True, button=True, time=True, data=None):
-        self.webkit.load_html_string("<h1>Info</h1>","meelu://newmeme")
-
-    def show_about_help(self, widget=True, button=True, time=True, data=None):
-        self.webkit.load_html_string("<h1>Help</h1>","meelu://newmeme")
+        self.webkit.load_html_string("<h1>In costruzione</h1>","meelu://Info")
 
     def login(self, widget=True):
         if not self.connection.logged:
@@ -165,7 +165,23 @@ class MeeluGUIWebkit:
             msg = msg.replace("#settings#","")
             list = msg.split("#")
             if "refreshtime" in list[0]:
-                pass
+                self.config.set_refreshtime(list[1])
+            elif "cssfile" in list[0]:
+                self.config.set_cssfile(list[1])
+                if self.config.data["cssfile"]:
+                    self.HtmlBuilder.load_css(self.config.data["cssfile"])
+            elif "only_txt" in list[0]:
+                self.config.change_only_text_value()
+            elif "mark_as_read" in list[0]:
+                self.connection.mark_as_read_new_memes()
+                self.connection.mark_as_read_replies()
+            elif "info" in list[0]:
+                self.show_about_info()
+            elif "notify" in list[0]:
+                self.config.change_notify_value()
+            self.config.save_files()
+            print msg
+            self.show_settings()
                 
         elif "#login#" in msg:
             msg = msg.replace("#login#","")
@@ -234,27 +250,34 @@ class MeeluGUIWebkit:
         """
         Mostra la finestra e carica la pagina di Login.
         """
+        print "Loading connections:",
         username =  self.config.get_username()
         hash = self.config.get_password()
         if username and hash:
             self.connection.set_access(username,hash,nohash=True)
             xml = self.connection.check_username_exists()
+        print "done"
+        print "Starting threads:",
         thread.start_new_thread(self.loop_get_wf, ())
+        print "done... please wait..."
         
+        print "Making pages and GUI:",
         self.login()
         
         self.webkit.show()
         self.__show()
-        pynotify.Notification("Meelu", "Loading complete!").show()
+        print "done"
+        print "Load Complete"
         gtk.main()
 
-        
     def loop_get_wf(self):
         from time import sleep
         while 1:
             if self.connection.logged:
-                self.cache_get_wf_xml = self.connection.get_wf(ot=True)
-                thread.start_new_thread(self.__ntf_new_meme, ())
+                self.cache_get_wf_xml = self.connection.get_wf(20, True, self.config.data["only_txt"])
+                #self.cache_get_wf_xml = self.connection.get_wf(ot=self.config.data["only_txt"]) # Non sembra funzionare
+                if self.config.data["notify"]:
+                    thread.start_new_thread(self.__ntf_new_meme, ())
             else:
                 self.cache_get_wf_xml = ""
             sleep(int(self.config.data["refreshtime"]))
@@ -269,6 +292,8 @@ class MeeluGUIWebkit:
         for meme in chiavi:
             if not dicto[meme]["id"] in self.__ntf_read:
                 self.__ntf_read.append(dicto[meme]["id"])
+                if not dicto[meme]["content"]:
+                    continue
                 if len(dicto[meme]["content"]) >= 253:
                     text = dicto[meme]["content"][:253] + "..."
                 else:

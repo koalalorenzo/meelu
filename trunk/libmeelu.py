@@ -6,6 +6,7 @@ import sys
 import os
 import urllib
 import urllib2
+import shutil
 import xml.dom.minidom
 from xml.dom.minidom import Node
         
@@ -184,15 +185,13 @@ class MeemiConnect:
         return self.api_ask("http://meemi.com/api/%s/wf/mark/only_new_replies" % self.username,dicto)
         
     def get_wf(self,limit=20,nr=True,ot=False):
-        if nr and ot:
-            return self.api_ask("http://meemi.com/api/%s/wf/text/nr" % self.username, {})
-        elif nr and not ot:
-            return self.api_ask("http://meemi.com/api/%s/wf/nr" % self.username, {})
-        elif ot and not nr:
-            return self.api_ask("http://meemi.com/api/%s/wf/text" % self.username, {})
-        else:
-            return self.api_ask("http://meemi.com/api/%s/wf" % self.username, {})
-
+        value = ""
+        if nr:
+            value += "/nr"
+        if ot:
+            value += "/ot"
+        return self.api_ask("http://meemi.com/api/%s/wf/%s" % (self.username, value), {})
+        
     def get_wf_new(self,limit=20,nr=True):
         dicto = {
                     "meemi_id": self.username,
@@ -273,6 +272,11 @@ function newmeme(content) {
 function menu(content) {
     document.title = "#menu#" + content;
 }
+
+function settings(content){
+    document.title = "#settings#" + content;
+}
+
 function login(username,password) {
     document.title = "#login#" + username + "#" + password;
 }
@@ -392,6 +396,21 @@ Meme:<br>
         else:
             return "<html>%s<body>%s%s</body>" % ( self.header,"<h1 id='meme' align='center'>Errore! Meme non inviato!</h1>", self.new_meme_form), False
                 
+    def __single_str_meme(self, meme):
+        str = ""
+        if meme["image"]:
+            str += '<img src="%s">' % meme["image"]
+            str += "<br>%s" % self.__code_html(meme["caption"])
+        if meme["video"]:
+            #str += meme["video"]
+            print "Video non supportato"
+            str += "<br>%s" % self.__code_html(meme["caption"])
+        if meme["link"]:
+            str += "<a href='%s'>%s</a>" % (meme["link"], self.__code_html(meme["description"]))
+        if meme["content"]:
+            str += self.__code_html(meme["content"])
+        return str
+        
     def wf_from_xml(self, xml):
         parser = XmlString(xml)
         parser.parse_meme()
@@ -401,17 +420,7 @@ Meme:<br>
         chiavi.reverse()
         html = "<html>%s<body>" % self.header
         for meme in chiavi:
-            str = ""
-            if dicto[meme]["image"]:
-                str += '<img src="%s">' % dicto[meme]["image"]
-                str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
-            if dicto[meme]["video"]:
-                str += dicto[meme]["video"]
-                str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
-            if dicto[meme]["link"]:
-                str += "<a href='%s'>%s</a>" % (dicto[meme]["link"], self.__code_html(dicto[meme]["description"]))
-            if dicto[meme]["content"]:
-                str += self.__code_html(dicto[meme]["content"])
+            str = str = self.__single_str_meme(dicto[meme])
             html += """\n<div id='meme'><div id='screenname' onclick='openuser("%s");'><div id="screenavatar"><img src="%s" /></div>%s:</div><div onclick='openmeme("%s","%s");'>%s</div></div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["avatar_small"],dicto[meme]["screen_name"],dicto[meme]["screen_name"],dicto[meme]["id"],str)
         html += "</body>"
         return html, True
@@ -424,17 +433,7 @@ Meme:<br>
         chiavi.sort()
         html = "<html>%s<body>" % self.header
         for meme in chiavi:
-            str = ""
-            if dicto[meme]["image"]:
-                str += '<img src="%s">' % dicto[meme]["image"]
-                str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
-            if dicto[meme]["video"]:
-                str += dicto[meme]["video"]
-                str += "<br>%s" % self.__code_html(dicto[meme]["caption"])
-            if dicto[meme]["link"]:
-                str += "<a href='%s'>%s</a>" % (dicto[meme]["link"], self.__code_html(dicto[meme]["description"]))
-            if dicto[meme]["content"]:
-                str += self.__code_html(dicto[meme]["content"])
+            str = self.__single_str_meme(dicto[meme])
             html += """\n<div id='meme'><div id='screenname' onclick='openuser("%s");'><div id="screenavatar"><img src="%s" /></div>%s:</div><div onclick='openmeme("%s","%s");'>%s</div></div><br>""" % (dicto[meme]["screen_name"],dicto[meme]["avatar_small"],dicto[meme]["screen_name"],dicto[meme]["screen_name"],dicto[meme]["id"],str)
         html += """<div id="replyform"><from name="form">
 Rispondi:<br>
@@ -460,6 +459,30 @@ Rispondi:<br>
         else:
             return "<html>%s<body>%s%s</body>" % ( self.header,"<h1 id='meme' align='center'>Meme Non Inviato! :(</h1>", self.menu_form), False
 
+    def settings_page(self,config):
+        html = self.header
+        html += """<body><form name="form" align="center">
+        <div id="meme"><h1>Settings</h1><div>
+        <input type="button" onclick="settings('info');" value="Informazioni & About"><br>
+        <input type="button" onclick="settings('info');" value="Segna tutti i meme come letti"><br>
+        """
+        if config["notify"]:
+            html += """<input name="notify" onclick="settings('notify');" type="checkbox" value="notify" checked="checked"/> Notifiche<br>"""
+        else:
+            html += """<input name="notify" onclick="settings('notify');" type="checkbox" value="notify"/> Notifiche<br>"""
+        
+        if config["only_txt"]:
+            html += """<input name="only_txt" onclick="settings('only_txt');" type="checkbox" value="only_txt" checked="checked"/>Scarica solo il testo<br>"""
+        else:
+            html += """<input name="only_txt" onclick="settings('only_txt');" type="checkbox" value="only_txt">Scarica solo il testo<br>"""
+        
+        html += """Tempo di aggiornamento (<i>Numero</i>): <input name="numeri" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('refreshtime#' + this.form.numeri.value);" value="Aggiorna"><br>""" % config["refreshtime"]
+        #html += """Foglio di stile: <input name="style" type="file" size="15" value="%s"><input type="button" onclick="settings('cssfile#' + this.form.style.value);" value="Aggiorna"><br>""" % config["cssfile"]
+        html += """Foglio di stile (<i>Percorso</i>):<br><input name="style" type="text" size="25" value="%s"><input type="button" onclick="settings('cssfile#' + this.form.style.value);" value="Salva"><br>""" % os.path.split(config["cssfile"])[-1]
+        
+        html += """</form></body></html>"""
+        return html
+        
     def home_page(self):
         return "<html>%s<body>%s%s</body>" % ( self.header,"<h1 id='meme'>Benvenuto!</h1>", self.menu_form), True
 
@@ -480,9 +503,11 @@ class ConfigParser:
         self.data["refreshtime"] = 120
         self.data["username"] = None
         self.data["password"] = None
+        self.data["only_txt"] = False
+        self.data["notify"] = True
         
         self.load_files()
-        
+        self.save_files()
     def get_username(self):
         if self.data["username"]:
             return self.data["username"].decode("base64")
@@ -510,7 +535,16 @@ class ConfigParser:
                 self.data["refreshtime"] = int(list[1])
             elif "cssfile" in list[0]: # path del css
                 self.data["cssfile"] = list[1]
-    
+            elif "only_txt" in list[0]:
+                if list[1] == "True":
+                    self.data["only_txt"] = True
+                else:
+                    self.data["only_txt"] = False
+            elif "notify" in list[0]:
+                if list[1] == "True":
+                    self.data["notify"] = True
+                else:
+                    self.data["notify"] = False 
     def set_access(self, username, hash):
         self.data["username"] = str(username).encode("base64")
         self.data["password"] = str(hash).encode("base64")
@@ -519,10 +553,24 @@ class ConfigParser:
 
     def set_cssfile(self, path):
         if os.path.exists(path):
-            self.data["cssfile"] = path
+            newpath = os.path.join(self.path_config, os.path.split(path)[-1])
+            shutil.copy(path, newpath)
+            self.data["cssfile"] = newpath
             
     def set_refreshtime(self, time):
         self.data["refreshtime"] = int(time)
+    
+    def change_only_text_value(self):
+        if self.data["only_txt"]:
+            self.data["only_txt"] = False
+        else:
+            self.data["only_txt"] = True
+
+    def change_notify_value(self):
+        if self.data["notify"]:
+            self.data["notify"] = False
+        else:
+            self.data["notify"] = True
 
     def save_files(self):    
         datafile = ""
