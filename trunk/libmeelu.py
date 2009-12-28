@@ -184,24 +184,34 @@ class MeemiConnect:
                  }
         return self.api_ask("http://meemi.com/api/%s/wf/mark/only_new_replies" % self.username,dicto)
         
-    def get_wf(self,limit=20,nr=True,ot=False):
+    def get_wf(self,limit=None,nr=True,ot=False,page=None):
         value = ""
         if nr:
             value += "/nr"
         if ot:
-            value += "/ot"
+            value += "/text"
+        if page:
+            value += "/page_%s" % page
+        if limit:
+            value += "/limit_%s" % limit
         return self.api_ask("http://meemi.com/api/%s/wf/%s" % (self.username, value), {})
-        
-    def get_wf_new(self,limit=20,nr=True):
+
+    def get_wf_new(self,limit=None,nr=True,ot=False,page=None):
         dicto = {
                     "meemi_id": self.username,
                     "pwd": self.password,
                     "app_key": self.app_key,
                  }
+        value = ""
         if nr:
-            return self.api_ask("http://meemi.com/api/%s/wf/only_new_memes/text/nr" % self.username, dicto)
-        else:
-            return self.api_ask("http://meemi.com/api/%s/wf/only_new_memes/text" % self.username, dicto)
+            value += "/nr"
+        if ot:
+            value += "/text"
+        if page:
+            value += "/page_%s" % page
+        if limit:
+            value += "/limit_%s" % limit
+        return self.api_ask("http://meemi.com/api/%s/wf/%s" % (self.username,value), dicto)
 
 
     def get_memesfera(self,limit=20,nr=True):
@@ -462,23 +472,27 @@ Rispondi:<br>
     def settings_page(self,config):
         html = self.header
         html += """<body><form name="form" align="center">
-        <div id="meme"><h1>Settings</h1><div>
-        <input type="button" onclick="settings('info');" value="Informazioni & About"><br>
-        <input type="button" onclick="settings('info');" value="Segna tutti i meme come letti"><br>
+        <div id="meme"><h1>Settings</h1><div><hr>
+        <input type="button" onclick="settings('info');" value="Informazioni & About">
+        <input type="button" onclick="settings('force_get_wf');" value="Forza Aggiornamento">
+        <input type="button" onclick="settings('mark_as_read');" value="Segna tutti i meme come letti">
         """
         if config["notify"]:
-            html += """<input name="notify" onclick="settings('notify');" type="checkbox" value="notify" checked="checked"/> Notifiche<br>"""
+            html += """<hr><input name="notify" onclick="settings('notify');" type="checkbox" value="notify" checked="checked"/> Notifiche<br>"""
         else:
-            html += """<input name="notify" onclick="settings('notify');" type="checkbox" value="notify"/> Notifiche<br>"""
+            html += """<hr><input name="notify" onclick="settings('notify');" type="checkbox" value="notify"/> Notifiche<br>"""
         
         if config["only_txt"]:
-            html += """<input name="only_txt" onclick="settings('only_txt');" type="checkbox" value="only_txt" checked="checked"/>Scarica solo il testo<br>"""
+            html += """<hr><input name="only_txt" onclick="settings('only_txt');" type="checkbox" value="only_txt" checked="checked"/>Scarica solo il testo<br>"""
         else:
-            html += """<input name="only_txt" onclick="settings('only_txt');" type="checkbox" value="only_txt">Scarica solo il testo<br>"""
+            html += """<hr><input name="only_txt" onclick="settings('only_txt');" type="checkbox" value="only_txt">Scarica solo il testo<br>"""
         
-        html += """Tempo di aggiornamento (<i>Numero</i>): <input name="numeri" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('refreshtime#' + this.form.numeri.value);" value="Aggiorna"><br>""" % config["refreshtime"]
+        html += """<hr>Tempo di aggiornamento (<i>Numero</i>):<br><input name="numeri" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('refreshtime#' + this.form.numeri.value);" value="Aggiorna"><br>""" % config["refreshtime"]
+        
+        html += """<hr>Meme da caricare (<i>Numero</i>):<br><input name="meminum" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('limit#' + this.form.meminum.value);" value="Aggiorna"><br>""" % config["limit"]
+        
         #html += """Foglio di stile: <input name="style" type="file" size="15" value="%s"><input type="button" onclick="settings('cssfile#' + this.form.style.value);" value="Aggiorna"><br>""" % config["cssfile"]
-        html += """Foglio di stile (<i>Percorso</i>):<br><input name="style" type="text" size="25" value="%s"><input type="button" onclick="settings('cssfile#' + this.form.style.value);" value="Salva"><br>""" % os.path.split(config["cssfile"])[-1]
+        html += """<hr>Foglio di stile (<i>Percorso</i>):<br><input name="style" type="text" size="25" value="%s"><input type="button" onclick="settings('cssfile#' + this.form.style.value);" value="Salva"><br>""" % os.path.split(config["cssfile"])[-1]
         
         html += """</form></body></html>"""
         return html
@@ -505,6 +519,7 @@ class ConfigParser:
         self.data["password"] = None
         self.data["only_txt"] = False
         self.data["notify"] = True
+        self.data["limit"] = 20
         
         self.load_files()
         self.save_files()
@@ -527,13 +542,15 @@ class ConfigParser:
         lines = self.__read_lines(self.path_file)
         for line in lines:
             list = line.split(":")
-            if "username" in list[0]: # username
+            if "username" in list[0]:
                 self.data["username"] = list[1]
-            elif "password" in list[0]: # hash
+            elif "password" in list[0]:
                 self.data["password"] = list[1]
-            elif "refreshtime" in list[0]: # tempo di caricamento
+            elif "refreshtime" in list[0]:
                 self.data["refreshtime"] = int(list[1])
-            elif "cssfile" in list[0]: # path del css
+            elif "limit" in list[0]:
+                self.data["limit"] = int(list[1])
+            elif "cssfile" in list[0]:
                 self.data["cssfile"] = list[1]
             elif "only_txt" in list[0]:
                 if list[1] == "True":
@@ -545,6 +562,7 @@ class ConfigParser:
                     self.data["notify"] = True
                 else:
                     self.data["notify"] = False 
+                    
     def set_access(self, username, hash):
         self.data["username"] = str(username).encode("base64")
         self.data["password"] = str(hash).encode("base64")
@@ -559,6 +577,10 @@ class ConfigParser:
             
     def set_refreshtime(self, time):
         self.data["refreshtime"] = int(time)
+        
+    def set_limit(self, limite):
+        self.data["limit"] = int(limite)
+    
     
     def change_only_text_value(self):
         if self.data["only_txt"]:

@@ -79,14 +79,17 @@ class MeeluGUIWebkit:
         
         self.Icon_Menu_Quit.connect('activate', self.quit, self.Icon)
         self.Icon_Menu_Home.connect('activate', self.__show)
-        self.Icon_Menu_About.connect('activate', self.show_about_info)
+        self.Icon_Menu_About.connect('activate', self.__show_info)
                 
         self.Icon_Menu.append(self.Icon_Menu_Home)
         self.Icon_Menu.append(self.Icon_Menu_About)
         self.Icon_Menu.append(self.Icon_Menu_Quit)        
         
         self.Icon.set_visible(True)
-        
+    def __show_info(self, widget=True, button=True, time=True, data=None):
+        self.window.show()
+        self.window_show = True
+        self.show_info()
     def __status_icon_popup(self, widget=True, button=True, time=True, data=None):
         if button == 3:
             if data:
@@ -106,8 +109,8 @@ class MeeluGUIWebkit:
         html = self.HtmlBuilder.settings_page(self.config.data)
         self.webkit.load_html_string(html,"meelu://settings")
 
-    def show_about_info(self, widget=True, button=True, time=True, data=None):
-        self.webkit.load_html_string("<h1>In costruzione</h1>","meelu://Info")
+    def show_info(self, widget=True, button=True, time=True, data=None):
+        self.webkit.load_html_string("<h1>In costruzione</h1><hr>Perfavore visita <a href='http://www.meelu.org'>http://www.meelu.org</a>!","meelu://Info")
 
     def login(self, widget=True):
         if not self.connection.logged:
@@ -136,7 +139,7 @@ class MeeluGUIWebkit:
             self.login(True)
 
     def get_new(self, widget=True):
-        xml = self.connection.get_wf_new()
+        xml = self.connection.get_wf_new(limit=self.config.data["limit"], ot=self.config.data["only_txt"])
         html, status = self.HtmlBuilder.wf_from_xml(xml)
         self.webkit.load_html_string(html,"meelu://newwf")
         
@@ -162,10 +165,15 @@ class MeeluGUIWebkit:
                 self.new_meme()
                 
         elif "#settings#" in msg:
+            self.show_settings()
             msg = msg.replace("#settings#","")
             list = msg.split("#")
-            if "refreshtime" in list[0]:
+            if "force_get_wf" in list[0]:
+                self.cache_get_wf_xml = self.connection.get_wf(limit=self.config.data["limit"], ot=self.config.data["only_txt"])
+            elif "refreshtime" in list[0]:
                 self.config.set_refreshtime(list[1])
+            elif "limit" in list[0]:
+                self.config.set_limit(list[1])
             elif "cssfile" in list[0]:
                 self.config.set_cssfile(list[1])
                 if self.config.data["cssfile"]:
@@ -179,9 +187,10 @@ class MeeluGUIWebkit:
                 self.show_about_info()
             elif "notify" in list[0]:
                 self.config.change_notify_value()
+            else:
+                print "Error: What is it? :S » ", msg
             self.config.save_files()
-            print msg
-            self.show_settings()
+            
                 
         elif "#login#" in msg:
             msg = msg.replace("#login#","")
@@ -274,7 +283,7 @@ class MeeluGUIWebkit:
         from time import sleep
         while 1:
             if self.connection.logged:
-                self.cache_get_wf_xml = self.connection.get_wf(20, True, self.config.data["only_txt"])
+                self.cache_get_wf_xml = self.connection.get_wf(limit=self.config.data["limit"], ot=self.config.data["only_txt"])
                 #self.cache_get_wf_xml = self.connection.get_wf(ot=self.config.data["only_txt"]) # Non sembra funzionare
                 if self.config.data["notify"]:
                     thread.start_new_thread(self.__ntf_new_meme, ())
