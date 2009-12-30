@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='Meelu',
-    version='0.2',
+    version='0.3',
     description='Meelu is a Desktop client for Meemi',
     author='Lorenzo Setale',
     author_email='koalalorenzo@gmail.com',
