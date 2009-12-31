@@ -1,6 +1,23 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+#    Meelu Copyright 2009, 2010 Lorenzo Setale
+#
+#    This file is part of Meelu.
+#
+#    Meelu is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    Meelu is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Meelu.  If not, see <http://www.gnu.org/licenses/>.
+
 import libmeelu
 
 
@@ -168,35 +185,45 @@ class MeeluGUIWebkit:
                 self.new_meme()
                 
         elif "#settings#" in msg:
-            self.show_settings()
             msg = msg.replace("#settings#","")
             list = msg.split("#")
             if "force_get_wf" in list[0]:
                 self.cache_get_wf_xml = self.connection.get_wf(limit=self.config.data["limit"], ot=self.config.data["only_txt"])
+                
             elif "refreshtime" in list[0]:
                 self.config.set_refreshtime(list[1])
-            elif "limit" in list[0]:
+                
+            elif "alimit" in list[0]:
                 self.config.set_limit(list[1])
+                
             elif "notifylimit" in list[0]:
                 self.config.set_notify_limit(list[1])
+                
             elif "cssfile" in list[0]:
                 self.config.set_cssfile(list[1])
                 if self.config.data["cssfile"]:
                     self.HtmlBuilder.load_css(self.config.data["cssfile"])
+                    
             elif "only_txt" in list[0]:
                 self.config.change_only_text_value()
+                
             elif "mark_as_read" in list[0]:
                 self.connection.mark_as_read_new_memes()
                 self.connection.mark_as_read_replies()
+                
             elif "info" in list[0]:
-                self.show_about_info()
+                print "makign info page"
+                
             elif "notify" in list[0]:
                 self.config.change_notify_value()
             else:
                 print "Error: What is it? :S » ", msg
             self.config.save_files()
+            self.show_settings()
             
-                
+            if "info" in list[0]:
+                self.show_about_info()
+            
         elif "#login#" in msg:
             msg = msg.replace("#login#","")
             accesslist = msg.split("#")
