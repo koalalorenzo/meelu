@@ -19,7 +19,7 @@ deb: build
 	mkdir ./Meelu/DEBIAN
 	touch ./Meelu/DEBIAN/control
 	echo "Package: meelu" >> ./Meelu/DEBIAN/control
-	echo "Version: 0.3" >> ./Meelu/DEBIAN/control 
+	echo "Version: 0.4" >> ./Meelu/DEBIAN/control 
 	echo "Architecture: all" >> ./Meelu/DEBIAN/control
 	echo "Depends: python (>= 2.5), python-notify, python-glade2, python-gtk2, python-webkit" >> ./Meelu/DEBIAN/control
 	echo "Maintainer: Lorenzo Setale <koalalorenzo@gmail.com>" >> ./Meelu/DEBIAN/control

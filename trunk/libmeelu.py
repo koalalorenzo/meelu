@@ -1,6 +1,23 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+#    Meelu Copyright 2009, 2010 Lorenzo Setale
+#
+#    This file is part of Meelu.
+#
+#    Meelu is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    Meelu is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with Meelu.  If not, see <http://www.gnu.org/licenses/>.
+
 import sys
 
 import os
@@ -413,7 +430,8 @@ Meme:<br>
             str += "<br>%s" % self.__code_html(meme["caption"])
         if meme["video"]:
             #str += meme["video"]
-            print "Video non supportato"
+            link = "http://meemi.com/%s/%s" % ( meme["screen_name"], meme["id"])
+            str += "<b>Video Non supportato!</b> <a href='%s'>link al meme</a>" % link
             str += "<br>%s" % self.__code_html(meme["caption"])
         if meme["link"]:
             str += "<a href='%s'>%s</a>" % (meme["link"], self.__code_html(meme["description"]))
@@ -491,7 +509,7 @@ Rispondi:<br>
         
         html += """<hr>Notifiche per volta (<i>Numero</i>):<br><input name="notifylimit" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('notifylimit#' + this.form.notifylimit.value);" value="Aggiorna"><br>""" % config["notify_limit"]
         
-        html += """<hr>Meme da caricare (<i>Numero</i>):<br><input name="meminum" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('limit#' + this.form.meminum.value);" value="Aggiorna"><br>""" % config["limit"]
+        html += """<hr>Meme da caricare (<i>Numero</i>):<br><input name="meminum" type="text" value="%s" size="5" maxlength="5"/><input type="button" onclick="settings('alimit#' + this.form.meminum.value);" value="Aggiorna"><br>""" % config["limit"]
         
         #html += """Foglio di stile: <input name="style" type="file" size="15" value="%s"><input type="button" onclick="settings('cssfile#' + this.form.style.value);" value="Aggiorna"><br>""" % config["cssfile"]
         html += """<hr>Foglio di stile (<i>Percorso</i>):<br><input name="style" type="text" size="25" value="%s"><input type="button" onclick="settings('cssfile#' + this.form.style.value);" value="Salva"><br>""" % os.path.split(config["cssfile"])[-1]
