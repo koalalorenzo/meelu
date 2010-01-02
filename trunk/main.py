@@ -62,7 +62,7 @@ class MeeluGUIWebkit:
                         "home_page" : self.home_page,
                         "get_wf" : self.get_wf,
                         "get_new" : self.get_new,
-                        "close_window": self.__show,
+                        "close_window": self.__close,
                         "show_settings": self.show_settings
                     }
                     
@@ -117,6 +117,10 @@ class MeeluGUIWebkit:
                 data.popup(None, None, None, 3, time)
         pass
         
+    def __close(self, widget=True, button=True, time=True, data=None):
+        self.window.hide()
+        self.window_show = False
+        
     def __show(self, widget=True, button=True, time=True, data=None):
         if self.window_show:
             self.window.hide()
@@ -151,6 +155,7 @@ class MeeluGUIWebkit:
             if self.cache_get_wf_xml:
                 xml = self.cache_get_wf_xml
             else:
+                pynotify.Notification("Meelu", "Loading new memes...").show() 
                 self.cache_get_wf_xml = self.connection.get_wf()
                 xml = self.cache_get_wf_xml
             html, status = self.HtmlBuilder.wf_from_xml(xml)
@@ -159,6 +164,7 @@ class MeeluGUIWebkit:
             self.login(True)
 
     def get_new(self, widget=True):
+        pynotify.Notification("Meelu", "Loading new memes...").show() 
         xml = self.connection.get_wf_new(limit=self.config.data["limit"], ot=self.config.data["only_txt"])
         html, status = self.HtmlBuilder.wf_from_xml(xml)
         self.webkit.load_html_string(html,"meelu://newwf")
@@ -208,21 +214,19 @@ class MeeluGUIWebkit:
                 self.config.change_only_text_value()
                 
             elif "mark_as_read" in list[0]:
+                pynotify.Notification("Meelu", "Marking new memes.").show() 
                 self.connection.mark_as_read_new_memes()
                 self.connection.mark_as_read_replies()
                 
-            elif "info" in list[0]:
-                print "makign info page"
-                
             elif "notify" in list[0]:
                 self.config.change_notify_value()
+            elif "info" in list[0]:
+                self.show_about_info()
             else:
                 print "Error: What is it? :S » ", msg
-            self.config.save_files()
-            self.show_settings()
-            
-            if "info" in list[0]:
-                self.show_about_info()
+            self.config.save()
+            if not "info" in list[0]:
+                self.show_settings()
             
         elif "#login#" in msg:
             msg = msg.replace("#login#","")
@@ -239,7 +243,7 @@ class MeeluGUIWebkit:
                 newhash = OSha512.hexdigest()
                 OSha512 = ""
                 self.config.set_access(accesslist[0],newhash)
-                self.config.save_files()
+                self.config.save()
                 
             self.webkit.load_html_string(html,"meelu://")
             
@@ -353,6 +357,7 @@ class MeeluGUIWebkit:
         """
         Quesa funzione chiude il programma.
         """
+        self.config.save()
         sys.exit(0)
 
 
