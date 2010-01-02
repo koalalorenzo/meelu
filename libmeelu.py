@@ -25,8 +25,10 @@ import urllib
 import urllib2
 import shutil
 import xml.dom.minidom
+from sqlite3 import dbapi2 as sqlite
 from xml.dom.minidom import Node
-        
+import time
+
 class Meme:
     def __init__ (self,dict):
         self.id = dict["id"]
@@ -426,13 +428,13 @@ Meme:<br>
     def __single_str_meme(self, meme):
         str = ""
         if meme["image"]:
-            str += '<img src="%s">' % meme["image"]
-            str += "<br>%s" % self.__code_html(meme["caption"])
+            str += '<div align="center"><img src="%s">' % meme["image"]
+            str += "<br>%s</div>" % self.__code_html(meme["caption"])
         if meme["video"]:
-            #str += meme["video"]
             link = "http://meemi.com/%s/%s" % ( meme["screen_name"], meme["id"])
-            str += "<b>Video Non supportato!</b> <a href='%s'>link al meme</a>" % link
-            str += "<br>%s" % self.__code_html(meme["caption"])
+            #str += "<div align='center'>%s" % meme["video"]
+            str += "<div align='center'><i><b>Video Non supportato! <img src='http://meemi.com/stc/i/emo/cry.png'></b> <a href='%s'>link al meme</a></i>" % link
+            str += "<br>%s</div>" % self.__code_html(meme["caption"])
         if meme["link"]:
             str += "<a href='%s'>%s</a>" % (meme["link"], self.__code_html(meme["description"]))
         if meme["content"]:
@@ -526,24 +528,23 @@ class ConfigParser:
         self.path_config = os.path.join(self.path_home,".config/meelu/")
         if not os.path.exists(self.path_config):
             os.mkdir(self.path_config)
-        self.path_file = os.path.join(self.path_config,"config.lst")
-        self.path_log_file = os.path.join(self.path_config,"axex.log")
-        
-        self.__touch(self.path_file)
-        self.__touch(self.path_log_file)
+        self.db_file = os.path.join(self.path_config,"database.sql")
+        self.__touch(self.db_file)
+
+        self.database = sqlite.connect(self.db_file)
+        self.cursor =  self.database.cursor()
         
         self.data = dict()
-        self.data["cssfile"] = None
+        self.data["cssfile"] = ""
         self.data["refreshtime"] = 120
-        self.data["username"] = None
-        self.data["password"] = None
+        self.data["username"] = ""
+        self.data["password"] = ""
         self.data["only_txt"] = False
         self.data["notify"] = True
         self.data["limit"] = 20
         self.data["notify_limit"] = 5
         
-        self.load_files()
-        self.save_files()
+        self.load()
     def get_username(self):
         if self.data["username"]:
             return self.data["username"].decode("base64")
@@ -559,10 +560,10 @@ class ConfigParser:
     def get_access(self):
         return self.get_username, self.get_password
  
-    def load_files(self):
-        lines = self.__read_lines(self.path_file)
-        for line in lines:
-            list = line.split(":")
+    def load(self):
+        self.cursor.execute("select * from config")
+        for ( key, value ) in self.cursor:
+            list = [key, value]
             if "username" in list[0]:
                 self.data["username"] = list[1]
             elif "password" in list[0]:
@@ -619,34 +620,19 @@ class ConfigParser:
         else:
             self.data["notify"] = True
 
-    def save_files(self):    
-        datafile = ""
+    def log_insert(self, value):
+        self.cursor.execute("insert into log (time, value) values (%d, '%s')" % ( int(time.time()) , str(value) ) )
+        self.database.commit()
+        
+    def save(self):
         for key in self.data.keys():
-            datafile += "\n%s:%s" % ( str(key), str(self.data[key]) )
-        configfile = open(self.path_file,"w")
-        configfile.write(datafile)
-        configfile.close()
+            self.cursor.execute("insert into config (key, value) values ('%s', '%s')" % (key, str(self.data[key]) ) )
+        self.database.commit()
         
     def __touch(self,path):
         if not os.path.exists(path):
-            fileopen = open(path,"w")
-            fileopen.write("")
-            fileopen.close()
-            
-    def __read_lines(self, path):
-        if not os.path.exists(path):
-            return []
-        fileopen = open(path)
-        lines = fileopen.readlines()
-        fileopen.close()
-        for line in lines:
-            if not line or line == "" or line == "\n" or line == " " or ":" not in line:
-                try:
-                    lines.pop(lines.index(line))
-                except:
-                    pass
-        newlines = []
-        for line in lines:
-            line = line.replace("\n","")
-            newlines.append(line)
-        return newlines
+            self.__tmp_database = sqlite.connect(self.db_file)
+            self.__tmp_cursor =  self.__tmp_database.cursor()
+            self.__tmp_cursor.execute("create table log (time int(255), value varchar(4000))")
+            self.__tmp_cursor.execute("create table config (key varchar(4000), value varchar(4000))")
+            self.__tmp_database.commit()

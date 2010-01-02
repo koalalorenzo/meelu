@@ -3,10 +3,16 @@
   <!-- interface-requires gtk+ 2.16 -->
   <!-- interface-naming-policy project-wide -->
   <widget class="GtkWindow" id="window">
+    <property name="is_focus">True</property>
+    <property name="window_position">center</property>
     <property name="default_width">200</property>
     <property name="default_height">450</property>
     <property name="destroy_with_parent">True</property>
+    <property name="urgency_hint">True</property>
+    <property name="deletable">False</property>
     <signal name="destroy" handler="close_window"/>
+    <signal name="destroy_event" handler="close_window"/>
+    <signal name="remove" handler="close_window"/>
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
@@ -94,16 +100,41 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkButton" id="button4">
+              <widget class="GtkHBox" id="hbox1">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <signal name="clicked" handler="quit_event"/>
                 <child>
-                  <widget class="GtkImage" id="image4">
+                  <widget class="GtkButton" id="button2">
                     <property name="visible">True</property>
-                    <property name="stock">gtk-quit</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="quit_event"/>
+                    <child>
+                      <widget class="GtkImage" id="image4">
+                        <property name="visible">True</property>
+                        <property name="stock">gtk-quit</property>
+                      </widget>
+                    </child>
                   </widget>
+                  <packing>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkButton" id="button3">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="close_window"/>
+                    <child>
+                      <widget class="GtkImage" id="image6">
+                        <property name="visible">True</property>
+                        <property name="stock">gtk-close</property>
+                      </widget>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="position">1</property>
+                  </packing>
                 </child>
               </widget>
               <packing>
