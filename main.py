@@ -34,7 +34,7 @@ from time import sleep
 class MeeluGUIWebkit:
     def __init__(self,maindir=''):
         """
-        Funzione d'iniziale.
+        Funzione iniziale.
         """
         self.maindir = maindir
         
