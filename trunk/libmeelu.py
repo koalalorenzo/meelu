@@ -439,6 +439,7 @@ Meme:<br>
             str += "<a href='%s'>%s</a>" % (meme["link"], self.__code_html(meme["description"]))
         if meme["content"]:
             str += self.__code_html(meme["content"])
+        str = str.replace("\n","\n<br>")
         return str
         
     def wf_from_xml(self, xml):

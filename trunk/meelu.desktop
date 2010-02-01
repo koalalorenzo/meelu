@@ -4,5 +4,6 @@ Encoding=UTF-8
 Name=Meelu
 Comment=The Meemi.com Client
 Exec=/usr/bin/meelu
+Categories=Network;
 Icon=/usr/share/meelu/meelu.png
 Terminal=false
